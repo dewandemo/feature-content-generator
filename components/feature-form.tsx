@@ -15,10 +15,15 @@ import { openai } from "@ai-sdk/openai"
 export default function FeatureForm() {
   const [featureName, setFeatureName] = useState("")
   const [featureDescription, setFeatureDescription] = useState("")
-  const [targetAudience, setTargetAudience] = useState("")
-  const [releaseDate, setReleaseDate] = useState("")
   const [selectedTemplates, setSelectedTemplates] = useState<PromptTemplate[]>([])
   const [contextPrompt, setContextPrompt] = useState("")
+  const [keyBenefits, setKeyBenefits] = useState("")
+  const [featureFlag, setFeatureFlag] = useState("")
+  const [releaseVersion, setReleaseVersion] = useState("")
+  const [realWorldUseCase, setRealWorldUseCase] = useState("")
+  const [competitorResources, setCompetitorResources] = useState("")
+  const [demoVideo, setDemoVideo] = useState<File | null>(null)
+  const [knownLimitations, setKnownLimitations] = useState("")
   const [generatedContent, setGeneratedContent] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -50,8 +55,13 @@ export default function FeatureForm() {
         
         Feature Name: ${featureName}
         Feature Description: ${featureDescription}
-        Target Audience: ${targetAudience || "Not specified"}
-        Expected Release Date: ${releaseDate || "Not specified"}
+        Key Benefits: ${keyBenefits || "Not specified"}
+        Feature Flag: ${featureFlag || "Not specified"}
+        Release Version: ${releaseVersion || "Not specified"}
+        Real-world Use Case: ${realWorldUseCase || "Not specified"}
+        Competitor Resources: ${competitorResources || "Not specified"}
+        Known Limitations: ${knownLimitations || "None provided"}
+        Demo Video: ${demoVideo ? demoVideo.name : "No video uploaded"}
         
         Content should be generated for the following templates:
         ${templatesText}
@@ -106,28 +116,88 @@ export default function FeatureForm() {
               />
             </div>
 
+            <div>
+              <Label htmlFor="key-benefits">Key Benefits</Label>
+              <Textarea
+                id="key-benefits"
+                placeholder="List the key benefits of this feature"
+                className="mt-1 bg-gray-800 border-gray-700 min-h-[80px]"
+                value={keyBenefits}
+                onChange={(e) => setKeyBenefits(e.target.value)}
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="target-audience">Target Audience</Label>
+                <Label htmlFor="feature-flag">Feature Flag</Label>
                 <Input
-                  id="target-audience"
-                  placeholder="Who is this feature for?"
+                  id="feature-flag"
+                  placeholder="Enter feature flag name or ID"
                   className="mt-1 bg-gray-800 border-gray-700"
-                  value={targetAudience}
-                  onChange={(e) => setTargetAudience(e.target.value)}
+                  value={featureFlag}
+                  onChange={(e) => setFeatureFlag(e.target.value)}
                 />
               </div>
               <div>
-                <Label htmlFor="release-date">Expected Release Date</Label>
+                <Label htmlFor="release-version">Release Version</Label>
                 <Input
-                  id="release-date"
-                  type="date"
+                  id="release-version"
+                  placeholder="e.g. 1.0.0"
                   className="mt-1 bg-gray-800 border-gray-700"
-                  value={releaseDate}
-                  onChange={(e) => setReleaseDate(e.target.value)}
+                  value={releaseVersion}
+                  onChange={(e) => setReleaseVersion(e.target.value)}
                 />
               </div>
             </div>
+
+            <div>
+              <Label htmlFor="real-world-use-case">Real-world Use Case</Label>
+              <Textarea
+                id="real-world-use-case"
+                placeholder="Describe a real-world scenario where this feature is used"
+                className="mt-1 bg-gray-800 border-gray-700 min-h-[80px]"
+                value={realWorldUseCase}
+                onChange={(e) => setRealWorldUseCase(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="competitor-resources">Competitor Resources</Label>
+              <Textarea
+                id="competitor-resources"
+                placeholder="Links or details about competitor resources"
+                className="mt-1 bg-gray-800 border-gray-700 min-h-[80px]"
+                value={competitorResources}
+                onChange={(e) => setCompetitorResources(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="demo-video">Demo Video</Label>
+              <Input
+                id="demo-video"
+                type="file"
+                accept="video/*"
+                className="mt-1 bg-gray-800 border-gray-700"
+                onChange={(e) => setDemoVideo(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+              />
+              {demoVideo && (
+                <p className="text-sm text-gray-400 mt-1">Selected: {demoVideo.name}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="known-limitations">Known Limitations</Label>
+              <Textarea
+                id="known-limitations"
+                placeholder="Describe any known limitations of this feature"
+                className="mt-1 bg-gray-800 border-gray-700 min-h-[80px]"
+                value={knownLimitations}
+                onChange={(e) => setKnownLimitations(e.target.value)}
+              />
+            </div>
+
+
           </div>
         </CardContent>
       </Card>
@@ -135,13 +205,11 @@ export default function FeatureForm() {
       <Card className="bg-gray-900 border-gray-800">
         <CardContent className="p-6">
           <Tabs defaultValue="templates">
-            <TabsList className="bg-gray-800 mb-6">
-              <TabsTrigger value="templates">Prompt Templates</TabsTrigger>
-              <TabsTrigger value="selected">Selected Templates</TabsTrigger>
-            </TabsList>
-
             <TabsContent value="templates">
-              <PromptTemplates onSelectTemplate={handleAddTemplate} />
+              <PromptTemplates 
+                selectedTemplates={selectedTemplates}
+                onSelectionChange={setSelectedTemplates}
+              />
             </TabsContent>
 
             <TabsContent value="selected">

@@ -8,23 +8,13 @@ export default function Navbar() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-blue-500"
-            >
-              <circle cx="16" cy="16" r="14" stroke="currentColor" strokeWidth="2" />
-              <path
-                d="M10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle cx="16" cy="16" r="4" fill="currentColor" />
-            </svg>
+          <img
+  src="/harness-logo.svg"
+  alt="Harness logo"
+  width={50}
+  height={50}
+  className="text-blue-500"
+/>
             <span className="ml-2 text-xl font-semibold">harness</span>
           </Link>
           <div className="hidden md:flex items-center space-x-6">

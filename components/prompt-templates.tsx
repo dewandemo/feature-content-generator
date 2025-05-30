@@ -51,14 +51,24 @@ const defaultTemplates: PromptTemplate[] = [
 ]
 
 interface PromptTemplatesProps {
-  onSelectTemplate: (template: PromptTemplate) => void
+  selectedTemplates: PromptTemplate[]
+  onSelectionChange: (templates: PromptTemplate[]) => void
 }
 
-export default function PromptTemplates({ onSelectTemplate }: PromptTemplatesProps) {
+export default function PromptTemplates({ selectedTemplates, onSelectionChange }: PromptTemplatesProps) {
   const [templates, setTemplates] = useState<PromptTemplate[]>(defaultTemplates)
   const [newTemplateName, setNewTemplateName] = useState("")
   const [newTemplateDescription, setNewTemplateDescription] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  const handleToggleSelect = (template: PromptTemplate) => {
+    const isSelected = selectedTemplates.some((t) => t.id === template.id)
+    if (isSelected) {
+      onSelectionChange(selectedTemplates.filter((t) => t.id !== template.id))
+    } else {
+      onSelectionChange([...selectedTemplates, template])
+    }
+  }
 
   const handleAddNewTemplate = () => {
     if (!newTemplateName || !newTemplateDescription) return
@@ -125,26 +135,28 @@ export default function PromptTemplates({ onSelectTemplate }: PromptTemplatesPro
         </Dialog>
       </div>
 
-      <p className="text-sm text-gray-400 mb-4">Drag and drop templates to add them to your project</p>
+      <p className="text-sm text-gray-400 mb-4">Select templates to add them to your project</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {templates.map((template) => (
-          <Card
-            key={template.id}
-            className="bg-gray-800 border-gray-700 cursor-move hover:border-gray-600 transition-colors"
-            draggable
-            onDragStart={(e) => handleDragStart(e, template)}
-            onClick={() => onSelectTemplate(template)}
-          >
-            <div className="p-4 flex items-start space-x-3">
-              <div className={`p-2 rounded-md ${template.color}`}>{template.icon}</div>
-              <div>
-                <h4 className="font-medium">{template.name}</h4>
-                <p className="text-sm text-gray-400">{template.description}</p>
+        {templates.map((template) => {
+          const isSelected = selectedTemplates.some((t) => t.id === template.id)
+          return (
+            <Card
+              key={template.id}
+              className={`bg-gray-800 border-gray-700 hover:border-gray-600 transition-colors cursor-pointer ${isSelected ? 'ring-2 ring-green-500 border-green-500' : ''}`}
+              onClick={() => handleToggleSelect(template)}
+            >
+              <div className="p-4 flex items-start space-x-3">
+                <div className={`p-2 rounded-md ${template.color}`}>{template.icon}</div>
+                <div>
+                  <h4 className="font-medium">{template.name}</h4>
+                  <p className="text-sm text-gray-400">{template.description}</p>
+                </div>
+
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
     </div>
   )
