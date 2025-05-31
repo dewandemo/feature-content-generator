@@ -1,11 +1,8 @@
 import { Storage } from '@google-cloud/storage';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-const storage = new Storage({
-  keyFilename: 'secrets/credentials.json', // Or use env var
-});
-
-const BUCKET_NAME = 'content-kings2025';
+const storage = new Storage();
+const BUCKET_NAME = process.env.GCP_BUCKET_NAME;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end('Method not allowed');

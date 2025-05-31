@@ -1,16 +1,10 @@
 import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
-import * as path from 'path';
-import * as fs from 'fs';
 import { useEffect, useState } from 'react';
 
 // 🔁 Replace with your actual bucket name and key file path
-const BUCKET_NAME = 'content-kings2025';
-const KEYFILE_PATH = path.resolve(__dirname, '../secrets/credentials.json');
-
-const storage = new Storage({
-  keyFilename: KEYFILE_PATH,
-});
+const storage = new Storage();
+const BUCKET_NAME = process.env.GCP_BUCKET_NAME;
 
 async function uploadFormData(formData: Record<string, any>) {
     const [timestamp, setTimestamp] = useState<string | null>(null);

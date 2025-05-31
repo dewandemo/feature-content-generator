@@ -36,15 +36,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var storage_1 = require("@google-cloud/storage");
-var uuid_1 = require("uuid");
-var path = require("path");
+const { Storage } = require("@google-cloud/storage");
+const uuid_1 = require("uuid");
 // 🔁 Replace with your actual bucket name and key file path
-var BUCKET_NAME = 'content-kings2025';
-var KEYFILE_PATH = path.resolve(__dirname, '../secrets/credentials.json');
-var storage = new storage_1.Storage({
-    keyFilename: KEYFILE_PATH,
-});
+const storage = new Storage();
+const BUCKET_NAME = process.env.GCP_BUCKET_NAME;
 function uploadFormData(formData) {
     return __awaiter(this, void 0, void 0, function () {
         var timestamp, id, filename, contents;
