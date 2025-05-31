@@ -1,0 +1,5 @@
+{
+    "type": "release_notes",
+    "name": "Release Notes",
+    "prompt": "You're writing a developer-facing release note entry for a new feature in {company_name}.\nThe style should follow this format:\n\n---\n\n### [New Feature]: {title}: Version {version}\n→ [Docs](https://developer.{site_url}) | [Tutorial](link TBD) | [Video](link TBD)\n\nShort one-line summary of what this feature does.\n\n**Use Cases**  \n{use_case}\n\n**How it works**  \n{description}\n\nOptionally include a bullet list or paragraph of key points on how users might interact with this feature (e.g., API usage, UI flow, or SDK integration tips). Mention any environment variables, settings, or expected behaviors.\n\n**Gotchas**  \n{gotchas}  \nIf applicable, suggest workarounds or reference relevant documentation."
+  }

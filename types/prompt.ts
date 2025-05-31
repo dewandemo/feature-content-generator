@@ -8,3 +8,4 @@ export interface PromptTemplate {
   color: string
   isCustom?: boolean
 }
+

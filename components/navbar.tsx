@@ -18,23 +18,11 @@ export default function Navbar() {
             <span className="ml-2 text-xl font-semibold">harness</span>
           </Link>
           <div className="hidden md:flex items-center space-x-6">
-            <Link href="#" className="text-sm hover:text-blue-400">
-              Product
+            <Link href="/templates" className="text-sm hover:text-blue-400">
+              Templates
             </Link>
-            <Link href="#" className="text-sm hover:text-blue-400">
-              Customers
-            </Link>
-            <Link href="#" className="text-sm hover:text-blue-400">
-              Open Source
-            </Link>
-            <Link href="#" className="text-sm hover:text-blue-400">
-              Pricing
-            </Link>
-            <Link href="#" className="text-sm hover:text-blue-400">
-              Learn
-            </Link>
-            <Link href="#" className="text-sm hover:text-blue-400">
-              Company
+            <Link href="/submissions" className="text-sm hover:text-blue-400">
+              Submissions
             </Link>
           </div>
         </div>
