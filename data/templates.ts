@@ -14,7 +14,7 @@ export const templatesMeta = [
       color: "border-green-500",
     },
     {
-      id: "tech-doc",
+      id: "tech",
       name: "Tech Doc",
       description: "Structure feature documentation for engineers.",
       color: "border-purple-500",
@@ -26,21 +26,15 @@ export const templatesMeta = [
       color: "border-yellow-500",
     },
     {
-      id: "release-notes",
+      id: "release_notes",
       name: "Release Notes",
       description: "Write concise changelog entries with context.",
       color: "border-red-500",
     },
     {
-      id: "se-handover",
+      id: "se_handover",
       name: "SE Handover",
       description: "Create internal docs for Sales Engineering.",
       color: "border-pink-500",
-    },
-    {
-      id: "feature-title",
-      name: "Feature Title",
-      description: "Generate clear, engaging feature titles.",
-      color: "border-cyan-500",
     },
   ];

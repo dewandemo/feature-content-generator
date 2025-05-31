@@ -1,13 +1,8 @@
-// pages/api/prompts/[id].ts
-
 import { NextApiRequest, NextApiResponse } from "next";
-import { Storage } from "@google-cloud/storage";
+import { storage, BUCKET_NAME } from '@/lib/storage';
 
-const BUCKET_NAME = "content-kings2025";
 const DEFAULT_PREFIX = "default";
 const UPDATED_PREFIX = "updated";
-
-const storage = new Storage();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
@@ -22,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     if (req.method === "GET") {
       const fileToRead = await fileExists(updatedFile) ? updatedFile : defaultFile;
-      const contents = await readFile(fileToRead);
+      const contents = await readPromptContent(fileToRead);
       return res.status(200).json({ prompt: contents });
     }
 
@@ -32,16 +27,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: "Missing prompt content" });
       }
 
-      await storage.bucket(BUCKET_NAME).file(updatedFile).save(prompt, {
-        contentType: "application/json",
-      });
+      await storage.bucket(BUCKET_NAME).file(updatedFile).save(
+        JSON.stringify({ prompt }),
+        { contentType: "application/json" }
+      );
 
       return res.status(200).json({ message: "Prompt saved" });
     }
 
     if (req.method === "DELETE") {
-      const file = storage.bucket(BUCKET_NAME).file(updatedFile);
-      await file.delete({ ignoreNotFound: true });
+      await storage.bucket(BUCKET_NAME).file(updatedFile).delete({ ignoreNotFound: true });
       return res.status(200).json({ message: "Prompt reverted to default" });
     }
 
@@ -52,14 +47,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-async function readFile(path: string): Promise<string> {
-  const file = storage.bucket(BUCKET_NAME).file(path);
+async function readPromptContent(filePath: string): Promise<string> {
+  const file = storage.bucket(BUCKET_NAME).file(filePath);
   const [contents] = await file.download();
-  return contents.toString("utf-8");
+  const json = JSON.parse(contents.toString("utf-8"));
+  return json.prompt;
 }
 
-async function fileExists(path: string): Promise<boolean> {
-  const file = storage.bucket(BUCKET_NAME).file(path);
+async function fileExists(filePath: string): Promise<boolean> {
+  const file = storage.bucket(BUCKET_NAME).file(filePath);
   const [exists] = await file.exists();
   return exists;
 }
