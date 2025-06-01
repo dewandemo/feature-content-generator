@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { storage, BUCKET_NAME } from '@/lib/storage';
+import { storage, BUCKET_NAME } from "@/lib/storage";
 
 const DEFAULT_PREFIX = "default";
 const UPDATED_PREFIX = "updated";
@@ -17,22 +17,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     if (req.method === "GET") {
       const fileToRead = await fileExists(updatedFile) ? updatedFile : defaultFile;
-      const contents = await readPromptContent(fileToRead);
-      return res.status(200).json({ prompt: contents });
+      const json = await readJson(fileToRead);
+      return res.status(200).json({ id, ...json });
     }
 
     if (req.method === "POST") {
-      const { prompt } = req.body;
-      if (!prompt || typeof prompt !== "string") {
-        return res.status(400).json({ error: "Missing prompt content" });
+      const { name, description = "", prompt } = req.body;
+
+      if (!name || !prompt) {
+        return res.status(400).json({ error: "Missing required fields" });
       }
 
-      await storage.bucket(BUCKET_NAME).file(updatedFile).save(
-        JSON.stringify({ prompt }),
-        { contentType: "application/json" }
-      );
+      const content = JSON.stringify({ name, description, prompt }, null, 2);
 
-      return res.status(200).json({ message: "Prompt saved" });
+      await storage.bucket(BUCKET_NAME).file(updatedFile).save(content, {
+        contentType: "application/json",
+      });
+
+      return res.status(200).json({ message: "Prompt saved", id, name, description, prompt });
     }
 
     if (req.method === "DELETE") {
@@ -47,11 +49,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-async function readPromptContent(filePath: string): Promise<string> {
+async function readJson(filePath: string): Promise<{ name: string; description?: string; prompt: string }> {
   const file = storage.bucket(BUCKET_NAME).file(filePath);
   const [contents] = await file.download();
-  const json = JSON.parse(contents.toString("utf-8"));
-  return json.prompt;
+  return JSON.parse(contents.toString("utf-8"));
 }
 
 async function fileExists(filePath: string): Promise<boolean> {

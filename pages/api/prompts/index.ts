@@ -1,37 +1,46 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { templatesMeta } from '@/data/templates';
-import { storage, BUCKET_NAME } from '@/lib/storage';
+import { NextApiRequest, NextApiResponse } from "next";
+import { storage, BUCKET_NAME } from "@/lib/storage";
+
+const DEFAULT_PREFIX = "default";
+const UPDATED_PREFIX = "updated";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-    if (!templatesMeta || !Array.isArray(templatesMeta)) {
-      return res.status(500).json({ error: 'Template metadata not available' });
+    const [defaultFiles] = await storage.bucket(BUCKET_NAME).getFiles({ prefix: DEFAULT_PREFIX });
+    const [updatedFiles] = await storage.bucket(BUCKET_NAME).getFiles({ prefix: UPDATED_PREFIX });
+
+    const mergedMap: Record<string, any> = {};
+
+    // Load updated files first (they take precedence)
+    for (const file of updatedFiles) {
+      const id = extractId(file.name, UPDATED_PREFIX);
+      if (!id) continue;
+
+      const [contents] = await file.download();
+      mergedMap[id] = { id, ...JSON.parse(contents.toString("utf-8")) };
     }
 
-    const templates = await Promise.all(
-      templatesMeta.map(async (meta) => {
-        const defaultPath = `default/${meta.id}.json`;
-        const updatedPath = `updated/${meta.id}.json`;
-        const bucket = storage.bucket(BUCKET_NAME);
+    // Load default files, but only if not overridden
+    for (const file of defaultFiles) {
+      const id = extractId(file.name, DEFAULT_PREFIX);
+      if (!id || mergedMap[id]) continue;
 
-        let prompt = '';
-        try {
-          const [exists] = await bucket.file(updatedPath).exists();
-          const filePath = exists ? updatedPath : defaultPath;
-          const [contents] = await bucket.file(filePath).download();
-          const json = JSON.parse(contents.toString());
-          prompt = json.prompt;
-        } catch (err) {
-          console.error(`Failed to load prompt for ${meta.id}:`, err);
-        }
+      const [contents] = await file.download();
+      mergedMap[id] = { id, ...JSON.parse(contents.toString("utf-8")) };
+    }
 
-        return { ...meta, prompt };
-      })
-    );
-
-    return res.status(200).json(templates);
+    return res.status(200).json(Object.values(mergedMap));
   } catch (err) {
-    console.error('Error fetching templates:', err);
-    return res.status(500).json({ error: 'Failed to load templates' });
+    console.error("Error loading templates:", err);
+    return res.status(500).json({ error: "Failed to load templates" });
   }
+}
+
+function extractId(filename: string, prefix: string): string | null {
+  const match = filename.match(new RegExp(`^${prefix}/(.+?)\\.json$`));
+  return match ? match[1] : null;
 }
