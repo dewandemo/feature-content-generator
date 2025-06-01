@@ -26,15 +26,6 @@ export default function Navbar() {
             </Link>
           </div>
         </div>
-        <div className="flex items-center space-x-4">
-          <button className="text-gray-300 hover:text-white">
-            <Search size={20} />
-          </button>
-          <Link href="#" className="hidden md:block text-sm hover:text-blue-400">
-            Contact us
-          </Link>
-          <Button className="bg-white text-black hover:bg-gray-200">Get started</Button>
-        </div>
       </div>
     </nav>
   )

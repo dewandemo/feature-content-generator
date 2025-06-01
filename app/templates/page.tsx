@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { iconMap } from "@/data/icons";
+import { templateMeta } from "@/data/icons";
 import { cn } from "@/lib/utils";
 import { PencilIcon, SaveIcon, FileText, Trash2Icon } from "lucide-react";
 import Navbar from "@/components/navbar";
@@ -20,11 +20,17 @@ interface TemplateData {
 }
 
 function generateId(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
+
+const DEFAULT_IDS = [
+  "blog",
+  "se_handover",
+  "tech",
+  "announcement",
+  "release_notes",
+  "newsletter",
+];
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<TemplateData[]>([]);
@@ -35,14 +41,6 @@ export default function TemplatesPage() {
     description: "",
     prompt: "",
   });
-  const DEFAULT_IDS = [
-    "blog",
-    "se_handover",
-    "tech",
-    "announcement",
-    "release_notes",
-    "newsletter",
-  ];
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -103,11 +101,11 @@ export default function TemplatesPage() {
       prev.map((t) => (t.id === id ? { ...t, currentPrompt: newPrompt } : t))
     );
   };
-  
+
   const handleDeleteTemplate = async (id: string) => {
     const confirmed = window.confirm("Are you sure you want to delete this template?");
     if (!confirmed) return;
-  
+
     await fetch(`/api/prompts/${id}`, { method: "DELETE" });
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   };
@@ -141,6 +139,80 @@ export default function TemplatesPage() {
     setShowAddForm(false);
   };
 
+  const customTemplates = templates
+    .filter((t) => !DEFAULT_IDS.includes(t.id))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
+  const defaultTemplates = templates
+    .filter((t) => DEFAULT_IDS.includes(t.id))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
+  const renderTemplateCard = (template: TemplateData) => {
+    const meta = templateMeta[template.id] ?? {
+      icon: FileText,
+      color: "bg-gray-500/10 text-gray-500",
+    };
+    const hasChanges = template.currentPrompt !== template.prompt;
+
+    return (
+      <Card
+        key={template.id}
+        className={cn("bg-gray-900 border-gray-800 p-4 rounded-md w-full")}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className={`p-2 rounded-md ${meta.color}`}>
+              <meta.icon className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">{template.name}</h3>
+              <p className="text-sm text-gray-400">{template.description}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {!DEFAULT_IDS.includes(template.id) && (
+              <Button
+                variant="ghost"
+                className="text-red-500 hover:text-red-700"
+                onClick={() => handleDeleteTemplate(template.id)}
+              >
+                <Trash2Icon className="h-4 w-4" />
+              </Button>
+            )}
+            {!template.isEditing ? (
+              <Button variant="ghost" onClick={() => toggleEdit(template.id)}>
+                <PencilIcon className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button variant="ghost" onClick={() => savePrompt(template.id)}>
+                <SaveIcon className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {template.isExpanded && (
+          <div className="mt-4 space-y-4">
+            <Textarea
+              className="bg-gray-800 border-gray-700 min-h-[200px]"
+              value={template.currentPrompt}
+              onChange={(e) => updatePrompt(template.id, e.target.value)}
+            />
+            {hasChanges && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => resetPrompt(template.id)}
+              >
+                Revert to Default
+              </Button>
+            )}
+          </div>
+        )}
+      </Card>
+    );
+  };
+
   return (
     <>
       <Navbar />
@@ -162,28 +234,19 @@ export default function TemplatesPage() {
                 placeholder="Name"
                 className="w-full bg-gray-800 border-gray-700 p-2 rounded"
                 value={newTemplate.name}
-                onChange={(e) =>
-                  setNewTemplate({ ...newTemplate, name: e.target.value })
-                }
+                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
               />
               <input
                 placeholder="Description"
                 className="w-full bg-gray-800 border-gray-700 p-2 rounded"
                 value={newTemplate.description}
-                onChange={(e) =>
-                  setNewTemplate({
-                    ...newTemplate,
-                    description: e.target.value,
-                  })
-                }
+                onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
               />
               <Textarea
                 placeholder="Prompt content"
                 className="bg-gray-800 border-gray-700 min-h-[100px]"
                 value={newTemplate.prompt}
-                onChange={(e) =>
-                  setNewTemplate({ ...newTemplate, prompt: e.target.value })
-                }
+                onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
               />
               <Button className="bg-blue-600" onClick={handleAddTemplate}>
                 Save Template
@@ -192,80 +255,20 @@ export default function TemplatesPage() {
           </Card>
         )}
 
-        <div className="space-y-4">
-          {templates.map((template) => {
-            const Icon = iconMap[template.id] ?? FileText;
-            const hasChanges = template.currentPrompt !== template.prompt;
-
-            return (
-              <Card
-                key={template.id}
-                className={cn(
-                  "bg-gray-900 border-gray-800 p-4 rounded-md w-full"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Icon className="h-6 w-6" />
-                    <div>
-                      <h3 className="text-lg font-semibold">{template.name}</h3>
-                      <p className="text-sm text-gray-400">
-                        {template.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {!DEFAULT_IDS.includes(template.id) && (
-                      <Button
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDeleteTemplate(template.id)}
-                      >
-                        <Trash2Icon className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {!template.isEditing ? (
-                      <Button
-                        variant="ghost"
-                        onClick={() => toggleEdit(template.id)}
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        onClick={() => savePrompt(template.id)}
-                      >
-                        <SaveIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {template.isExpanded && (
-                  <div className="mt-4 space-y-4">
-                    <Textarea
-                      className="bg-gray-800 border-gray-700 min-h-[200px]"
-                      value={template.currentPrompt}
-                      onChange={(e) =>
-                        updatePrompt(template.id, e.target.value)
-                      }
-                    />
-                    {hasChanges && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => resetPrompt(template.id)}
-                      >
-                        Revert to Default
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </Card>
-            );
-          })}
+        <div className="space-y-4 mb-10">
+          {customTemplates.map(renderTemplateCard)}
         </div>
+
+        {defaultTemplates.length > 0 && (
+          <div className="mt-8 border-t-4 border-gray-700 pt-6">
+            <h2 className="text-sm text-gray-400 uppercase tracking-widest mb-4">
+              Default Templates
+            </h2>
+            <div className="space-y-4">
+              {defaultTemplates.map(renderTemplateCard)}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

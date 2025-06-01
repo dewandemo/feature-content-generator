@@ -6,7 +6,7 @@ export const templatesMeta = [
   },
   {
     id: "blog",
-    name: "Feature Blog",
+    name: "Blog Post",
     description: "Create a prompt template for writing an educational, SEO-friendly blog post.",
   },
   {
