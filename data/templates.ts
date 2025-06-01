@@ -1,40 +1,32 @@
-// data/templates.ts
-
 export const templatesMeta = [
-    {
-      id: "announcement",
-      name: "Announcement",
-      description: "Write a short, exciting product announcement.",
-      color: "border-blue-500",
-    },
-    {
-      id: "blog",
-      name: "Blog",
-      description: "Generate a technical blog post with SEO support.",
-      color: "border-green-500",
-    },
-    {
-      id: "tech",
-      name: "Tech Doc",
-      description: "Structure feature documentation for engineers.",
-      color: "border-purple-500",
-    },
-    {
-      id: "newsletter",
-      name: "Newsletter",
-      description: "Summarize monthly features for customers.",
-      color: "border-yellow-500",
-    },
-    {
-      id: "release_notes",
-      name: "Release Notes",
-      description: "Write concise changelog entries with context.",
-      color: "border-red-500",
-    },
-    {
-      id: "se_handover",
-      name: "SE Handover",
-      description: "Create internal docs for Sales Engineering.",
-      color: "border-pink-500",
-    },
-  ];
+  {
+    id: "announcement",
+    name: "Feature Announcement",
+    description: "Create a prompt template for generating an exciting product announcement.",
+  },
+  {
+    id: "blog",
+    name: "Feature Blog",
+    description: "Create a prompt template for writing an educational, SEO-friendly blog post.",
+  },
+  {
+    id: "newsletter",
+    name: "Newsletter Snippet",
+    description: "Create a prompt template to produce a short, engaging newsletter blurb.",
+  },
+  {
+    id: "release_notes",
+    name: "Release Notes",
+    description: "Create a prompt template that summarizes a new feature with technical context and limitations.",
+  },
+  {
+    id: "se_handover",
+    name: "SE Handover",
+    description: "Create a prompt template for generating a handover document to help sales engineers explain a feature.",
+  },
+  {
+    id: "tech",
+    name: "Technical Documentation",
+    description: "Create a prompt template for writing developer-facing technical documentation.",
+  },
+];
