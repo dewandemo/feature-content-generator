@@ -1,30 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { saveAs } from "file-saver";
+import JSZip from "jszip";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Navbar from "@/components/navbar";
-import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
 
 interface Submission {
   id: string;
-  team: {
-    id: string;
-    name: string;
-    emails: string[];
-  };
   feature: {
     name: string;
-    description: string;
   };
-  selectedTemplates: {
-    id: string;
-    name: string;
-    description: string;
-    color: string;
-  }[];
-  generatedOutput: string;
   timestamp: string;
+  generatedOutput: string;
+  selectedTemplates: { id: string; name: string }[];
 }
 
 export default function SubmissionsPage() {
@@ -40,82 +31,73 @@ export default function SubmissionsPage() {
     fetchSubmissions();
   }, []);
 
-  const parseGeneratedOutput = (
-    output: string,
-    templates: Submission["selectedTemplates"],
-    featureName: string
-  ) => {
-    const parts = output.split("\n---\n");
-    const entries = parts.map((section) => {
-      const firstLine = section.match(/^# (.+)/);
-      const title = firstLine ? firstLine[1].toLowerCase() : "unknown";
-      const matchedTemplate = templates.find((t) =>
-        title.includes(t.name.toLowerCase())
+  const parseGeneratedOutput = (output: string, templates: Submission["selectedTemplates"], featureName: string) => {
+    const sections = output.split("---");
+    const files: { name: string; content: string; title: string }[] = [];
+
+    sections.forEach((section) => {
+      const titleMatch = section.match(/^# (.+)/m);
+      const title = titleMatch ? titleMatch[1].trim() : "unknown";
+      const template = templates.find((t) =>
+        title.toLowerCase().includes(t.name.toLowerCase())
       );
-      const slug = featureName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      const filename = `${slug}_${matchedTemplate?.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")}.md`;
-      return { name: matchedTemplate?.name || title, content: section, filename };
+      const templateId = template?.id || "unknown";
+      const filename = `${featureName.toLowerCase().replace(/\s+/g, "-")}_${templateId}.md`;
+      files.push({ name: filename, content: section.trim(), title: template?.name || "unknown" });
     });
-    return entries;
+
+    return files;
+  };
+
+  const handleDownloadAll = async (files: { name: string; content: string }[], zipName: string) => {
+    const zip = new JSZip();
+    files.forEach((file) => {
+      zip.file(file.name, file.content);
+    });
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, zipName);
   };
 
   return (
     <>
       <Navbar />
       <div className="container py-10 space-y-6">
-        <h1 className="text-3xl font-bold mb-4">Submissions</h1>
         {submissions.map((submission) => {
-          const parsedContent = parseGeneratedOutput(
-            submission.generatedOutput,
-            submission.selectedTemplates,
-            submission.feature.name
-          );
-
-          const readableDate = format(
-            new Date(submission.timestamp),
-            "MMMM do, yyyy"
-          );
+          const { id, feature, timestamp, generatedOutput, selectedTemplates } = submission;
+          const dateStr = format(new Date(timestamp), "MMMM do, yyyy");
+          const files = parseGeneratedOutput(generatedOutput, selectedTemplates, feature.name);
 
           return (
-            <Card
-              key={submission.id}
-              className="bg-gray-900 border-gray-800 p-6 rounded-md"
-            >
-              <div className="mb-2">
-                <h2 className="text-xl font-semibold">
-                  {submission.feature.name}
-                </h2>
-                <p className="text-sm text-gray-400">Submitted on {readableDate}</p>
+            <Card key={id} className="bg-gray-900 border border-gray-800 p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold">{feature.name}</h2>
+                  <p className="text-sm text-gray-400">Submitted on {dateStr}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadAll(files, `${feature.name.toLowerCase().replace(/\s+/g, "-")}-submission.zip`)}
+                >
+                  Download All 📦
+                </Button>
               </div>
-              <div className="space-y-2 mt-4">
-                {parsedContent.map((entry) => (
-                  <div
-                    key={entry.filename}
-                    className="p-4 bg-gray-800 rounded border border-gray-700"
-                  >
-                    <h3 className="font-medium text-white mb-2">
-                      {entry.name}
-                    </h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const blob = new Blob([entry.content], {
-                          type: "text/markdown",
-                        });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = entry.filename;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                    >
-                      Download {entry.filename}
-                    </Button>
-                  </div>
+              <div className="space-y-3">
+                {files.map((file) => (
+                  <Card key={file.name} className="bg-gray-800 border border-gray-700 p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium">{file.title}</span>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          const blob = new Blob([file.content], { type: "text/markdown;charset=utf-8" });
+                          saveAs(blob, file.name);
+                        }}
+                      >
+                        📥
+                      </Button>
+                    </div>
+                  </Card>
                 ))}
               </div>
             </Card>
