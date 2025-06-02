@@ -35,14 +35,35 @@ export default function PromptTemplates({
         const data = await res.json();
 
         const enrichedTemplates = data.map((t: any) => {
-          const visual = templateMeta[t.id] ?? {
-            icon: FileText,
-            color: "bg-gray-500/10 text-gray-500",
-          };
+          let color = "bg-gray-500/10 text-gray-500";
+        
+          switch (t.id) {
+            case "announcement":
+              color = "bg-green-500/10 text-green-500";
+              break;
+            case "blog":
+              color = "bg-blue-500/10 text-blue-500";
+              break;
+            case "newsletter":
+              color = "bg-orange-500/10 text-orange-500";
+              break;
+            case "release_notes":
+              color = "bg-yellow-500/10 text-yellow-500";
+              break;
+            case "se_handover":
+              color = "bg-pink-500/10 text-pink-500";
+              break;
+            case "tech_doc":
+              color = "bg-sky-500/10 text-sky-500";
+              break;
+          }
+        
+          const IconComponent = templateMeta[t.id]?.icon ?? FileText;
+        
           return {
             ...t,
-            icon: <visual.icon className="h-5 w-5" />,
-            color: visual.color,
+            icon: <IconComponent className="h-5 w-5" />,
+            color,
           };
         });
 
@@ -79,17 +100,14 @@ export default function PromptTemplates({
       body: JSON.stringify({ name, description, prompt }),
     });
 
-    const visual = templateMeta[id] ?? {
-      icon: FileText,
-      color: "bg-gray-500/10 text-gray-500",
-    };
+    const IconComponent = templateMeta[id]?.icon ?? FileText;
 
     const newEntry: PromptTemplate = {
       id,
       name,
       description,
-      icon: <visual.icon className="h-5 w-5" />,
-      color: visual.color,
+      icon: <IconComponent className="h-5 w-5" />,
+      color: templateMeta[id]?.color ?? "bg-gray-500/10 text-gray-500",
       isCustom: true,
     };
 

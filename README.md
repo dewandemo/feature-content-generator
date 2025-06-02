@@ -1,19 +1,15 @@
 # Feature Content Generator
-
 This project is a Next.js application using TypeScript and Tailwind CSS. It leverages various Radix UI components and other modern libraries.
 
 ## Getting Started
-
 ### 1. Install Dependencies
 
 This project uses `pnpm` as the preferred package manager (see `pnpm-lock.yaml`). If you don't have pnpm installed, you can install it globally:
-
 ```sh
 npm install -g pnpm
 ```
 
 Then, install the dependencies:
-
 ```sh
 pnpm install
 ```
@@ -21,7 +17,6 @@ pnpm install
 > **Note:** If you use `npm install` and encounter dependency conflicts (e.g., with `date-fns` and `react-day-picker`), update your `date-fns` version in `package.json` to `^3.0.0` or use pnpm for smoother dependency resolution.
 
 ### 2. Run the Development Server
-
 ```sh
 pnpm dev
 ```
@@ -29,13 +24,11 @@ pnpm dev
 The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ### 3. Build for Production
-
 ```sh
 pnpm build
 ```
 
 ### 4. Start the Production Server
-
 ```sh
 pnpm start
 ```
@@ -43,15 +36,12 @@ pnpm start
 ---
 
 # 🔄 Migrating to GCP (Vertex AI + Bucket Storage)
-
 This guide helps you migrate your local/OpenAI-based setup to a Google Cloud Platform (GCP)-backed system using Vertex AI and GCS (Google Cloud Storage). It includes how to set up your credentials, create the storage bucket, and upload your prompt templates.
 
 ---
 
 ## ✅ Prerequisites
-
 Before you begin:
-
 - You have a Google Cloud project set up.
 - Billing is enabled for the project.
 - Vertex AI and Storage APIs are enabled.
@@ -60,7 +50,6 @@ Before you begin:
 ---
 
 ## 📁 1. Create and Configure a GCP Bucket
-
 ```bash
 # Replace with your desired bucket name and region
 GCP_BUCKET_NAME=content-kings2025
@@ -74,13 +63,11 @@ gsutil uniformbucketlevelaccess set on gs://$GCP_BUCKET_NAME
 ```
 
 ### Set Bucket Permissions
-
 Ensure your service account has the following roles:
 - `Storage Admin`
 - `Vertex AI User`
 
 To set permissions:
-
 ```bash
 # Replace with your service account email
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
@@ -91,7 +78,6 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
 ---
 
 ## 🔑 2. Set Environment Variables
-
 Add the following to your `.env` file:
 
 ```env
@@ -111,7 +97,6 @@ export AI_API_KEYS=openai=sk-xxx,vertex=your-project-id:us-central1:gemini-2.0-p
 ---
 
 ## ⬆️ 3. Upload Default Prompt Templates
-
 Use the CLI to upload the default prompt templates to your GCS bucket:
 
 ```bash
@@ -122,7 +107,6 @@ gsutil -m cp prompts/default/*.json gs://$GCP_BUCKET_NAME/default/
 ---
 
 ## 🧠 4. Switching to Vertex AI Models
-
 Update your generation logic to use Vertex AI SDK instead of OpenAI. Example:
 
 ```ts
@@ -142,7 +126,6 @@ You now have prompt templates hosted on GCP, proper credentials wired, and the a
 Feel free to customize the `.env` and prompt sync strategy further based on your workflow or CI/CD setup.
 
 ## Troubleshooting
-
 - If you see dependency errors with npm, try using pnpm or update conflicting dependencies as described above.
 - For more scripts, see the `scripts` section in `package.json`.
 
@@ -153,5 +136,4 @@ Feel free to customize the `.env` and prompt sync strategy further based on your
 - Radix UI
 
 ## License
-
 This project is private.

@@ -17,6 +17,8 @@ interface TemplateData {
   currentPrompt: string;
   isExpanded: boolean;
   isEditing: boolean;
+  icon: React.ReactNode;
+  color: string;
 }
 
 function generateId(name: string): string {
@@ -50,12 +52,21 @@ export default function TemplatesPage() {
       const res = await fetch("/api/prompts");
       const data = await res.json();
       setTemplates(
-        data.map((t: any) => ({
-          ...t,
-          isExpanded: false,
-          isEditing: false,
-          currentPrompt: t.prompt,
-        }))
+        data.map((t: any) => {
+          const meta = templateMeta[t.id] ?? {
+            icon: FileText,
+            color: "bg-gray-500/10 text-gray-500",
+          };
+
+          return {
+            ...t,
+            icon: <meta.icon className="h-6 w-6" />,
+            color: meta.color,
+            isExpanded: false,
+            isEditing: false,
+            currentPrompt: t.prompt,
+          };
+        })
       );
       setLoading(false);
     };
@@ -71,32 +82,106 @@ export default function TemplatesPage() {
     );
   };
 
-  const savePrompt = async (id: string) => {
-    const template = templates.find((t) => t.id === id);
-    if (!template) return;
-
-    await fetch(`/api/prompts/${id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: template.name,
-        description: template.description,
-        prompt: template.currentPrompt,
-      }),
-    });
-
+  const cancelEdit = (id: string) => {
     setTemplates((prev) =>
       prev.map((t) =>
-        t.id === id ? { ...t, isEditing: false, isExpanded: false } : t
+        t.id === id
+          ? {
+              ...t,
+              isEditing: false,
+              isExpanded: false,
+              currentPrompt: t.prompt,
+            }
+          : t
       )
     );
   };
 
-  const resetPrompt = async (id: string) => {
-    await fetch(`/api/prompts/${id}`, { method: "DELETE" });
+  const savePrompt = async (id: string) => {
+    const template = templates.find((t) => t.id === id);
+    if (!template) return;
+  
+    // Optimistically update UI first
     setTemplates((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, currentPrompt: t.prompt } : t))
+      prev.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              prompt: t.currentPrompt,
+              isEditing: false,
+              isExpanded: false,
+            }
+          : t
+      )
     );
+  
+    try {
+      const res = await fetch(`/api/prompts/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: template.name,
+          description: template.description,
+          prompt: template.currentPrompt,
+        }),
+      });
+  
+      if (!res.ok) throw new Error("Failed to save");
+  
+    } catch (err) {
+      console.error("❌ Failed to save template:", err);
+      // Reopen the editor if it fails
+      setTemplates((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                isEditing: true,
+                isExpanded: true,
+              }
+            : t
+        )
+      );
+    }
+  };
+
+  const resetPrompt = async (id: string) => {
+    const template = templates.find((t) => t.id === id);
+    if (!template) return;
+  
+    // Optimistically update
+    setTemplates((prev) =>
+      prev.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              currentPrompt: t.prompt,
+              isEditing: false,
+              isExpanded: false,
+            }
+          : t
+      )
+    );
+  
+    try {
+      const res = await fetch(`/api/prompts/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to revert");
+    } catch (err) {
+      console.error("❌ Failed to revert to default:", err);
+      // Reopen the editor if it fails
+      setTemplates((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                isEditing: true,
+                isExpanded: true,
+              }
+            : t
+        )
+      );
+      // Optional: toast.error("Failed to revert to default. Please try again.");
+    }
   };
 
   const updatePrompt = (id: string, newPrompt: string) => {
@@ -127,6 +212,10 @@ export default function TemplatesPage() {
       body: JSON.stringify({ name, description, prompt }),
     });
 
+    const meta = templateMeta[id] ?? {
+      icon: FileText,
+      color: "bg-gray-500/10 text-gray-500",
+    };
     setTemplates((prev) => [
       ...prev,
       {
@@ -137,6 +226,8 @@ export default function TemplatesPage() {
         currentPrompt: prompt,
         isExpanded: false,
         isEditing: false,
+        icon: <meta.icon className="h-6 w-6" />,
+        color: meta.color,
       },
     ]);
 
@@ -157,10 +248,6 @@ export default function TemplatesPage() {
     );
 
   const renderTemplateCard = (template: TemplateData) => {
-    const meta = templateMeta[template.id] ?? {
-      icon: FileText,
-      color: "bg-gray-500/10 text-gray-500",
-    };
     const hasChanges = template.currentPrompt !== template.prompt;
 
     return (
@@ -170,8 +257,8 @@ export default function TemplatesPage() {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-md ${meta.color}`}>
-              <meta.icon className="h-6 w-6" />
+            <div className={`p-2 rounded-md ${template.color}`}>
+              {template.icon}
             </div>
             <div>
               <h3 className="text-lg font-semibold">{template.name}</h3>
@@ -188,13 +275,9 @@ export default function TemplatesPage() {
                 <Trash2Icon className="h-4 w-4" />
               </Button>
             )}
-            {!template.isEditing ? (
+            {!template.isEditing && (
               <Button variant="ghost" onClick={() => toggleEdit(template.id)}>
                 <PencilIcon className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button variant="ghost" onClick={() => savePrompt(template.id)}>
-                <SaveIcon className="h-4 w-4" />
               </Button>
             )}
           </div>
@@ -207,15 +290,26 @@ export default function TemplatesPage() {
               value={template.currentPrompt}
               onChange={(e) => updatePrompt(template.id, e.target.value)}
             />
-            {hasChanges && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => resetPrompt(template.id)}
-              >
-                Revert to Default
+            <div className="flex justify-end space-x-2">
+              {hasChanges && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => resetPrompt(template.id)}
+                >
+                  Revert to Default
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => cancelEdit(template.id)}>
+                Cancel
               </Button>
-            )}
+              <Button
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => savePrompt(template.id)}
+              >
+                Save Template
+              </Button>
+            </div>
           </div>
         )}
       </Card>
@@ -245,19 +339,28 @@ export default function TemplatesPage() {
                 placeholder="Name"
                 className="w-full bg-gray-800 border-gray-700 p-2 rounded"
                 value={newTemplate.name}
-                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                onChange={(e) =>
+                  setNewTemplate({ ...newTemplate, name: e.target.value })
+                }
               />
               <input
                 placeholder="Description"
                 className="w-full bg-gray-800 border-gray-700 p-2 rounded"
                 value={newTemplate.description}
-                onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                onChange={(e) =>
+                  setNewTemplate({
+                    ...newTemplate,
+                    description: e.target.value,
+                  })
+                }
               />
               <Textarea
                 placeholder="Prompt content"
                 className="bg-gray-800 border-gray-700 min-h-[100px]"
                 value={newTemplate.prompt}
-                onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
+                onChange={(e) =>
+                  setNewTemplate({ ...newTemplate, prompt: e.target.value })
+                }
               />
               <div className="flex justify-end space-x-2">
                 <Button
