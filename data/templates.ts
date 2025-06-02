@@ -25,7 +25,7 @@ export const templatesMeta = [
     description: "Create a prompt template for generating a handover document to help sales engineers explain a feature.",
   },
   {
-    id: "tech",
+    id: "tech_doc",
     name: "Technical Documentation",
     description: "Create a prompt template for writing developer-facing technical documentation.",
   },

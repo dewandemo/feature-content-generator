@@ -29,7 +29,7 @@ function generateId(name: string): string {
 const DEFAULT_IDS = [
   "blog",
   "se_handover",
-  "tech",
+  "tech_doc",
   "announcement",
   "release_notes",
   "newsletter",

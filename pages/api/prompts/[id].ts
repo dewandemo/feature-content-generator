@@ -1,5 +1,7 @@
+// pages/api/prompts/[id].ts
 import { NextApiRequest, NextApiResponse } from "next";
 import { storage, BUCKET_NAME } from "@/lib/storage";
+import { generateLatestTemplates } from "@/scripts/generateLatestTemplates";
 
 const DEFAULT_PREFIX = "default";
 const UPDATED_PREFIX = "updated";
@@ -34,11 +36,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         contentType: "application/json",
       });
 
+      await generateLatestTemplates();
+
       return res.status(200).json({ message: "Prompt saved", id, name, description, prompt });
     }
 
     if (req.method === "DELETE") {
       await storage.bucket(BUCKET_NAME).file(updatedFile).delete({ ignoreNotFound: true });
+
+      await generateLatestTemplates();
+
       return res.status(200).json({ message: "Prompt reverted to default" });
     }
 
