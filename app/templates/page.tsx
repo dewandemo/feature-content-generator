@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { templateMeta } from "@/data/icons";
 import { cn } from "@/lib/utils";
-import { PencilIcon, SaveIcon, FileText, Trash2Icon, Plus } from "lucide-react";
+import { PencilIcon, FileText, Trash2Icon, Plus } from "lucide-react";
 import Navbar from "@/components/navbar";
 
 interface TemplateData {
@@ -19,6 +19,7 @@ interface TemplateData {
   isEditing: boolean;
   icon: React.ReactNode;
   color: string;
+  isOverridden?: boolean;
 }
 
 function generateId(name: string): string {
@@ -60,11 +61,12 @@ export default function TemplatesPage() {
 
           return {
             ...t,
-            icon: <meta.icon className="h-6 w-6" />,
+            icon: <meta.icon className="h-6 w-6" />, 
             color: meta.color,
             isExpanded: false,
             isEditing: false,
             currentPrompt: t.prompt,
+            isOverridden: !!t.updated,
           };
         })
       );
@@ -100,21 +102,24 @@ export default function TemplatesPage() {
   const savePrompt = async (id: string) => {
     const template = templates.find((t) => t.id === id);
     if (!template) return;
-  
-    // Optimistically update UI first
+
+    const updatedPrompt = template.currentPrompt;
+
     setTemplates((prev) =>
       prev.map((t) =>
         t.id === id
           ? {
               ...t,
-              prompt: t.currentPrompt,
+              prompt: updatedPrompt,
               isEditing: false,
               isExpanded: false,
+              isOverridden:
+                DEFAULT_IDS.includes(id) && updatedPrompt !== t.prompt,
             }
           : t
       )
     );
-  
+
     try {
       const res = await fetch(`/api/prompts/${id}`, {
         method: "POST",
@@ -122,80 +127,53 @@ export default function TemplatesPage() {
         body: JSON.stringify({
           name: template.name,
           description: template.description,
-          prompt: template.currentPrompt,
+          prompt: updatedPrompt,
         }),
       });
-  
       if (!res.ok) throw new Error("Failed to save");
-  
     } catch (err) {
       console.error("❌ Failed to save template:", err);
-      // Reopen the editor if it fails
-      setTemplates((prev) =>
-        prev.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                isEditing: true,
-                isExpanded: true,
-              }
-            : t
-        )
-      );
     }
   };
 
   const resetPrompt = async (id: string) => {
-    const template = templates.find((t) => t.id === id);
-    if (!template) return;
-  
-    // Optimistically update
     setTemplates((prev) =>
       prev.map((t) =>
         t.id === id
           ? {
               ...t,
               currentPrompt: t.prompt,
-              isEditing: false,
-              isExpanded: false,
+              isOverridden: false,
             }
           : t
       )
     );
-  
+
     try {
       const res = await fetch(`/api/prompts/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to revert");
     } catch (err) {
       console.error("❌ Failed to revert to default:", err);
-      // Reopen the editor if it fails
-      setTemplates((prev) =>
-        prev.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                isEditing: true,
-                isExpanded: true,
-              }
-            : t
-        )
-      );
-      // Optional: toast.error("Failed to revert to default. Please try again.");
     }
   };
 
   const updatePrompt = (id: string, newPrompt: string) => {
     setTemplates((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, currentPrompt: newPrompt } : t))
+      prev.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              currentPrompt: newPrompt,
+              isOverridden:
+                DEFAULT_IDS.includes(t.id) && newPrompt !== t.prompt,
+            }
+          : t
+      )
     );
   };
 
   const handleDeleteTemplate = async (id: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this template?"
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm("Are you sure you want to delete this template?")) return;
     await fetch(`/api/prompts/${id}`, { method: "DELETE" });
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   };
@@ -226,7 +204,7 @@ export default function TemplatesPage() {
         currentPrompt: prompt,
         isExpanded: false,
         isEditing: false,
-        icon: <meta.icon className="h-6 w-6" />,
+        icon: <meta.icon className="h-6 w-6" />, 
         color: meta.color,
       },
     ]);
@@ -235,49 +213,31 @@ export default function TemplatesPage() {
     setShowAddForm(false);
   };
 
-  const customTemplates = templates
-    .filter((t) => !DEFAULT_IDS.includes(t.id))
-    .sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-    );
-
-  const defaultTemplates = templates
-    .filter((t) => DEFAULT_IDS.includes(t.id))
-    .sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-    );
+  const customTemplates = templates.filter((t) => !DEFAULT_IDS.includes(t.id));
+  const defaultTemplates = templates.filter((t) => DEFAULT_IDS.includes(t.id));
 
   const renderTemplateCard = (template: TemplateData) => {
     const hasChanges = template.currentPrompt !== template.prompt;
 
     return (
-      <Card
-        key={template.id}
-        className={cn("bg-gray-900 border-gray-800 p-4 rounded-md w-full")}
-      >
+      <Card key={template.id} className={cn("bg-gray-900 border-gray-800 p-4 rounded-md w-full")}> 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-md ${template.color}`}>
-              {template.icon}
-            </div>
+            <div className={`p-2 rounded-md ${template.color}`}>{template.icon}</div>
             <div>
               <h3 className="text-lg font-semibold">{template.name}</h3>
               <p className="text-sm text-gray-400">{template.description}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {!DEFAULT_IDS.includes(template.id) && (
-              <Button
-                variant="ghost"
-                className="text-red-500 hover:text-red-700"
-                onClick={() => handleDeleteTemplate(template.id)}
-              >
-                <Trash2Icon className="h-4 w-4" />
+            {!template.isEditing && (
+              <Button variant="ghost" onClick={() => toggleEdit(template.id)} title="Edit Template">
+                <PencilIcon className="h-4 w-4" />
               </Button>
             )}
-            {!template.isEditing && (
-              <Button variant="ghost" onClick={() => toggleEdit(template.id)}>
-                <PencilIcon className="h-4 w-4" />
+            {!DEFAULT_IDS.includes(template.id) && (
+              <Button variant="ghost" className="text-red-500 hover:text-red-700" onClick={() => handleDeleteTemplate(template.id)} title="Delete Template">
+                <Trash2Icon className="h-4 w-4" />
               </Button>
             )}
           </div>
@@ -291,22 +251,15 @@ export default function TemplatesPage() {
               onChange={(e) => updatePrompt(template.id, e.target.value)}
             />
             <div className="flex justify-end space-x-2">
-              {hasChanges && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => resetPrompt(template.id)}
-                >
+              {DEFAULT_IDS.includes(template.id) && hasChanges && (
+                <Button variant="outline" size="sm" onClick={() => resetPrompt(template.id)}>
                   Revert to Default
                 </Button>
               )}
               <Button variant="outline" onClick={() => cancelEdit(template.id)}>
                 Cancel
               </Button>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={() => savePrompt(template.id)}
-              >
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => savePrompt(template.id)}>
                 Save Template
               </Button>
             </div>
@@ -322,12 +275,7 @@ export default function TemplatesPage() {
       <div className="container py-10">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Prompt Templates</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center"
-            onClick={() => setShowAddForm((prev) => !prev)}
-          >
+          <Button variant="outline" size="sm" className="flex items-center" onClick={() => setShowAddForm((prev) => !prev)}>
             <Plus className="h-4 w-4 mr-1" /> Add Template
           </Button>
         </div>
@@ -339,37 +287,22 @@ export default function TemplatesPage() {
                 placeholder="Name"
                 className="w-full bg-gray-800 border-gray-700 p-2 rounded"
                 value={newTemplate.name}
-                onChange={(e) =>
-                  setNewTemplate({ ...newTemplate, name: e.target.value })
-                }
+                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
               />
               <input
                 placeholder="Description"
                 className="w-full bg-gray-800 border-gray-700 p-2 rounded"
                 value={newTemplate.description}
-                onChange={(e) =>
-                  setNewTemplate({
-                    ...newTemplate,
-                    description: e.target.value,
-                  })
-                }
+                onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
               />
               <Textarea
                 placeholder="Prompt content"
                 className="bg-gray-800 border-gray-700 min-h-[100px]"
                 value={newTemplate.prompt}
-                onChange={(e) =>
-                  setNewTemplate({ ...newTemplate, prompt: e.target.value })
-                }
+                onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
               />
               <div className="flex justify-end space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setNewTemplate({ name: "", description: "", prompt: "" });
-                    setShowAddForm(false);
-                  }}
-                >
+                <Button variant="outline" onClick={() => { setNewTemplate({ name: "", description: "", prompt: "" }); setShowAddForm(false); }}>
                   Cancel
                 </Button>
                 <Button className="bg-blue-600" onClick={handleAddTemplate}>
@@ -380,18 +313,14 @@ export default function TemplatesPage() {
           </Card>
         )}
 
-        <div className="space-y-4 mb-10">
-          {customTemplates.map(renderTemplateCard)}
-        </div>
+        <div className="space-y-4 mb-10">{customTemplates.map(renderTemplateCard)}</div>
 
         {defaultTemplates.length > 0 && (
           <div className="mt-8 border-t-4 border-gray-700 pt-6">
             <h2 className="text-sm text-gray-400 uppercase tracking-widest mb-4">
               Default Templates
             </h2>
-            <div className="space-y-4">
-              {defaultTemplates.map(renderTemplateCard)}
-            </div>
+            <div className="space-y-4">{defaultTemplates.map(renderTemplateCard)}</div>
           </div>
         )}
       </div>
