@@ -15,7 +15,7 @@ export default function Navbar() {
   height={50}
   className="text-blue-500"
 />
-            <span className="ml-2 text-xl font-semibold">harness</span>
+            <span className="ml-2 text-xl font-semibold">harness content generator</span>
           </Link>
           <div className="hidden md:flex items-center space-x-6">
             <Link href="/templates" className="text-sm hover:text-blue-400">
