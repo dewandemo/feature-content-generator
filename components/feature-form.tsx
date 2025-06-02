@@ -9,9 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PromptTemplates from "@/components/prompt-templates";
 import type { PromptTemplate } from "@/types/prompt";
-import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { v4 as uuidv4 } from "uuid";
+import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function FeatureForm() {
   const [featureName, setFeatureName] = useState("");
@@ -32,6 +38,8 @@ export default function FeatureForm() {
   const [teamName, setTeamName] = useState("");
   const [teamEmails, setTeamEmails] = useState("");
   const [teamId, setTeamId] = useState<string | null>(null);
+  const router = useRouter();
+  const [showDialog, setShowDialog] = useState(false);
 
   useEffect(() => {
     setTeamId(uuidv4());
@@ -64,32 +72,32 @@ export default function FeatureForm() {
         .join("\n");
 
       const prompt = `
-    Generate content for a new Harness feature with the following details:
-
-    Feature Name: ${featureName}
-    Feature Description: ${featureDescription}
-    Key Benefits: ${keyBenefits || "Not specified"}
-    Feature Flag: ${featureFlag || "Not specified"}
-    Release Version: ${releaseVersion || "Not specified"}
-    Real-world Use Case: ${realWorldUseCase || "Not specified"}
-    Competitor Resources: ${competitorResources || "Not specified"}
-    Known Limitations: ${knownLimitations || "None provided"}
-    Demo Video: ${demoVideo ? demoVideo.name : "No video uploaded"}
-
-    Content should be generated for the following templates:
-    ${templatesText}
-
-    Additional Context: ${contextPrompt || "None provided"}
-
-    Please format the output with clear headings for each template type.
-  `;
+        Generate content for a new Harness feature with the following details:
+  
+        Feature Name: ${featureName}
+        Feature Description: ${featureDescription}
+        Key Benefits: ${keyBenefits || "Not specified"}
+        Feature Flag: ${featureFlag || "Not specified"}
+        Release Version: ${releaseVersion || "Not specified"}
+        Real-world Use Case: ${realWorldUseCase || "Not specified"}
+        Competitor Resources: ${competitorResources || "Not specified"}
+        Known Limitations: ${knownLimitations || "None provided"}
+        Demo Video: ${demoVideo ? demoVideo.name : "No video uploaded"}
+  
+        Content should be generated for the following templates:
+        ${templatesText}
+  
+        Additional Context: ${contextPrompt || "None provided"}
+  
+        Please format the output with clear headings for each template type.
+      `;
 
       const response = await fetch("/api/generate-content", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt }), // make sure prompt is a string
+        body: JSON.stringify({ prompt }),
       });
 
       const data = await response.json();
@@ -99,9 +107,6 @@ export default function FeatureForm() {
       }
 
       setGeneratedContent(data.text);
-
-      // Generate a UUID for this submission
-      
 
       const submissionData = {
         team: {
@@ -126,7 +131,6 @@ export default function FeatureForm() {
         timestamp: new Date().toISOString(),
       };
 
-      // Save to GCS via API
       const saveRes = await fetch("/api/save-submission", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -137,6 +141,23 @@ export default function FeatureForm() {
         const errData = await saveRes.json();
         throw new Error(errData.error || "Failed to save submission");
       }
+
+      // ✅ Only after successful save
+      setShowDialog(true);
+      setFeatureName("");
+      setFeatureDescription("");
+      setKeyBenefits("");
+      setFeatureFlag("");
+      setReleaseVersion("");
+      setRealWorldUseCase("");
+      setCompetitorResources("");
+      setDemoVideo(null);
+      setKnownLimitations("");
+      setContextPrompt("");
+      setSelectedTemplates([]);
+      setTeamName("");
+      setTeamEmails("");
+      setGeneratedContent("");
     } catch (error) {
       console.error("Error generating content:", error);
       setGeneratedContent(
@@ -179,7 +200,7 @@ export default function FeatureForm() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="w-full">
         <Card className="bg-gray-900 border-gray-800">
           <CardContent className="p-6">
             <h2 className="text-2xl font-bold mb-6">Feature Details</h2>
@@ -300,7 +321,8 @@ export default function FeatureForm() {
             </div>
           </CardContent>
         </Card>
-
+        </div>
+        <div>
         <Card className="bg-gray-900 border-gray-800">
           <CardContent className="p-6">
             <Tabs defaultValue="templates">
@@ -309,42 +331,6 @@ export default function FeatureForm() {
                   selectedTemplates={selectedTemplates}
                   onSelectionChange={setSelectedTemplates}
                 />
-              </TabsContent>
-
-              <TabsContent value="selected">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Selected Templates</h3>
-                  {selectedTemplates.length === 0 ? (
-                    <p className="text-gray-400">
-                      No templates selected. Drag and drop templates from the
-                      Templates tab.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedTemplates.map((template) => (
-                        <div
-                          key={template.id}
-                          className="flex items-center justify-between p-3 bg-gray-800 rounded-md"
-                        >
-                          <div>
-                            <p className="font-medium">{template.name}</p>
-                            <p className="text-sm text-gray-400">
-                              {template.description}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveTemplate(template.id)}
-                            className="text-gray-400 hover:text-white"
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </TabsContent>
             </Tabs>
 
@@ -386,6 +372,24 @@ export default function FeatureForm() {
           </Card>
         )}
       </div>
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Content Generated</DialogTitle>
+            <DialogDescription>
+              Your content has been saved. What would you like to do next?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              Stay Here
+            </Button>
+            <Button onClick={() => router.push("/submissions")}>
+              Go to Submissions
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

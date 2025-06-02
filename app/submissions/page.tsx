@@ -7,6 +7,7 @@ import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Navbar from "@/components/navbar";
+import { Download, Archive } from "lucide-react";
 
 interface Submission {
   id: string;
@@ -31,7 +32,11 @@ export default function SubmissionsPage() {
     fetchSubmissions();
   }, []);
 
-  const parseGeneratedOutput = (output: string, templates: Submission["selectedTemplates"], featureName: string) => {
+  const parseGeneratedOutput = (
+    output: string,
+    templates: Submission["selectedTemplates"],
+    featureName: string
+  ) => {
     const sections = output.split("---");
     const files: { name: string; content: string; title: string }[] = [];
 
@@ -43,7 +48,11 @@ export default function SubmissionsPage() {
       );
       const templateId = template?.id || "unknown";
       const filename = `${featureName.toLowerCase().replace(/\s+/g, "-")}_${templateId}.md`;
-      files.push({ name: filename, content: section.trim(), title: template?.name || "unknown" });
+      files.push({
+        name: filename,
+        content: section.trim(),
+        title: template?.name || "unknown",
+      });
     });
 
     return files;
@@ -77,24 +86,35 @@ export default function SubmissionsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDownloadAll(files, `${feature.name.toLowerCase().replace(/\s+/g, "-")}-submission.zip`)}
+                  onClick={() =>
+                    handleDownloadAll(
+                      files,
+                      `${feature.name.toLowerCase().replace(/\s+/g, "-")}-submission.zip`
+                    )
+                  }
                 >
-                  Download All 📦
+                  <Archive className="w-4 h-4 mr-1" />
+                  Download All
                 </Button>
               </div>
-              <div className="space-y-3">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {files.map((file) => (
-                  <Card key={file.name} className="bg-gray-800 border border-gray-700 p-4">
-                    <div className="flex justify-between items-center">
+                  <Card
+                    key={file.name}
+                    className="bg-gray-800 border border-gray-700 p-4 flex flex-col justify-between"
+                  >
+                    <div className="flex justify-between items-start">
                       <span className="text-white font-medium">{file.title}</span>
                       <Button
-                        size="sm"
+                        size="icon"
+                        variant="ghost"
                         onClick={() => {
                           const blob = new Blob([file.content], { type: "text/markdown;charset=utf-8" });
                           saveAs(blob, file.name);
                         }}
                       >
-                        📥
+                        <Download className="w-4 h-4" />
                       </Button>
                     </div>
                   </Card>

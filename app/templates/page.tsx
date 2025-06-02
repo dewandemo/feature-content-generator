@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { templateMeta } from "@/data/icons";
 import { cn } from "@/lib/utils";
-import { PencilIcon, SaveIcon, FileText, Trash2Icon } from "lucide-react";
+import { PencilIcon, SaveIcon, FileText, Trash2Icon, Plus } from "lucide-react";
 import Navbar from "@/components/navbar";
 
 interface TemplateData {
@@ -20,7 +20,10 @@ interface TemplateData {
 }
 
 function generateId(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 const DEFAULT_IDS = [
@@ -103,7 +106,9 @@ export default function TemplatesPage() {
   };
 
   const handleDeleteTemplate = async (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to delete this template?");
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this template?"
+    );
     if (!confirmed) return;
 
     await fetch(`/api/prompts/${id}`, { method: "DELETE" });
@@ -141,11 +146,15 @@ export default function TemplatesPage() {
 
   const customTemplates = templates
     .filter((t) => !DEFAULT_IDS.includes(t.id))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+    );
 
   const defaultTemplates = templates
     .filter((t) => DEFAULT_IDS.includes(t.id))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+    );
 
   const renderTemplateCard = (template: TemplateData) => {
     const meta = templateMeta[template.id] ?? {
@@ -219,12 +228,14 @@ export default function TemplatesPage() {
       <div className="container py-10">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Prompt Templates</h1>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center"
             onClick={() => setShowAddForm((prev) => !prev)}
-            className="text-blue-500 hover:underline text-sm"
           >
-            + Add Template
-          </button>
+            <Plus className="h-4 w-4 mr-1" /> Add Template
+          </Button>
         </div>
 
         {showAddForm && (
@@ -248,9 +259,20 @@ export default function TemplatesPage() {
                 value={newTemplate.prompt}
                 onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
               />
-              <Button className="bg-blue-600" onClick={handleAddTemplate}>
-                Save Template
-              </Button>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setNewTemplate({ name: "", description: "", prompt: "" });
+                    setShowAddForm(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button className="bg-blue-600" onClick={handleAddTemplate}>
+                  Save Template
+                </Button>
+              </div>
             </div>
           </Card>
         )}

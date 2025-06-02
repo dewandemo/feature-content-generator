@@ -1,11 +1,8 @@
-import { Storage } from '@google-cloud/storage';
 import path from 'path';
 import fs from 'fs/promises';
+import { storage, BUCKET_NAME } from '@/lib/storage';
 
-const BUCKET_NAME = 'content-kings2025';
 const PROMPT_DIR = path.resolve(__dirname, '../prompts/default');
-
-const storage = new Storage();
 
 async function uploadPrompts() {
   try {
